@@ -1,0 +1,5 @@
+commit ada06362dc400f272f1726988738cab2b6593baf
+Author: André Bargull <andre.bargull@gmail.com>
+Date:   Tue Dec 17 17:09:14 2024 +0100
+
+    Add linter for parseTestRecord
