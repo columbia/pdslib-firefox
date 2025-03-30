@@ -23,6 +23,7 @@ members = [
   "toolkit/crashreporter/rust_minidump_writer_linux",
   "toolkit/library/gtest/rust",
   "toolkit/library/rust/",
+  "dom/privateattribution",
 ]
 
 # Excluded crates may be built as dependencies, but won't be considered members

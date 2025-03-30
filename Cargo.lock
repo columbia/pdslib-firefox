@@ -2461,6 +2461,7 @@ dependencies = [
  "oxilangtag",
  "oxilangtag-ffi",
  "prefs_parser",
+ "privateattribution",
  "processtools",
  "profiler_helper",
  "qcms",
@@ -5118,6 +5119,17 @@ dependencies = [
  "sha3",
  "subtle",
  "thiserror 1.999.999",
+]
+
+[[package]]
+name = "privateattribution"
+version = "0.1.0"
+dependencies = [
+ "libc",
+ "nserror",
+ "nsstring",
+ "thin-vec",
+ "xpcom",
 ]
 
 [[package]]

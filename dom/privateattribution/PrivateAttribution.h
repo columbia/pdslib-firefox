@@ -47,4 +47,9 @@ class PrivateAttribution final : public nsWrapperCache {
 
 }  // namespace mozilla::dom
 
+// Implemented in Rust.
+extern "C" {
+  nsresult nsPrivateAttributionConstructor(REFNSIID aIID, void** aResult);
+}  // extern "C"
+
 #endif  // mozilla_dom_PrivateAttribution_h
