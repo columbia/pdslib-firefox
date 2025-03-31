@@ -5126,6 +5126,7 @@ name = "privateattribution"
 version = "0.1.0"
 dependencies = [
  "libc",
+ "log",
  "nserror",
  "nsstring",
  "thin-vec",

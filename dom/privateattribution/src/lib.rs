@@ -18,6 +18,8 @@ struct MyPrivateAttributionService {}
 #[allow(non_snake_case)]
 impl MyPrivateAttributionService {
     fn new() -> Result<RefPtr<Self>, ()> {
+        log::warn!("MyPrivateAttributionService::new()");
+
         let this = Self::allocate(InitMyPrivateAttributionService {});
         Ok(this)
     }
@@ -40,6 +42,8 @@ impl MyPrivateAttributionService {
         ad: &nsAString,
         targetHost: &nsACString,
     ) -> Result<(), nsresult> {
+        log::warn!("MyPrivateAttributionService::on_attribution_event({sourceHost:?}, {ty:?}, {index}, {ad:?}, {targetHost:?})");
+
         Ok(())
     }
 
@@ -65,6 +69,8 @@ impl MyPrivateAttributionService {
         ads: &ThinVec<nsString>,
         sourceHosts: &ThinVec<nsCString>,
     ) -> Result<(), nsresult> {
+        log::warn!("MyPrivateAttributionService::on_attribution_conversion({targetHost:?}, {task:?}, {histogramSize}, {lookbackDays}, {impressionType:?}, {ads:?}, {sourceHosts:?})");
+
         Ok(())
     }
 }
@@ -74,6 +80,8 @@ pub unsafe extern "C" fn nsPrivateAttributionConstructor(
     iid: &nsIID,
     result: *mut *mut c_void,
 ) -> nsresult {
+    log::warn!("nsPrivateAttributionConstructor(<iid>, {result:?})");
+
     let Ok(service) = MyPrivateAttributionService::new() else {
         return NS_ERROR_FAILURE;
     };
