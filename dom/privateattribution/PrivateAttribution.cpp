@@ -139,4 +139,22 @@ void PrivateAttribution::MeasureConversion(
       aOptions.mAds, aOptions.mSources);
 }
 
+double PrivateAttribution::GetBudget(const nsACString& filterType,
+                                    int64_t epochId, const nsACString& uri) {
+  if (XRE_IsParentProcess()) {
+    nsCOMPtr<nsIPrivateAttributionService> pa =
+        components::PrivateAttribution::Service();
+    if (NS_WARN_IF(!pa)) {
+      return -1.0;
+    }
+
+    double out = -1.0;
+    pa->GetBudget(filterType, epochId, uri, &out);
+    return out;
+  }
+
+  // TODO: Implement RPC
+  return -1.0;
+}
+
 }  // namespace mozilla::dom

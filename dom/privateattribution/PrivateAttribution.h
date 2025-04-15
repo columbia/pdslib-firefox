@@ -34,6 +34,8 @@ class PrivateAttribution final : public nsWrapperCache {
   void SaveImpression(const PrivateAttributionImpressionOptions&, ErrorResult&);
   void MeasureConversion(const PrivateAttributionConversionOptions&,
                          ErrorResult&);
+  double GetBudget(const nsACString& filterType, int64_t epochId,
+                   const nsACString& uri);
 
  private:
   static bool ShouldRecord();
@@ -49,7 +51,7 @@ class PrivateAttribution final : public nsWrapperCache {
 
 // Implemented in Rust.
 extern "C" {
-  nsresult nsPrivateAttributionConstructor(REFNSIID aIID, void** aResult);
+nsresult nsPrivateAttributionConstructor(REFNSIID aIID, void** aResult);
 }  // extern "C"
 
 #endif  // mozilla_dom_PrivateAttribution_h

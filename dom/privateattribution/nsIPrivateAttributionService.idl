@@ -11,4 +11,5 @@ interface nsIPrivateAttributionService : nsISupports
 {
   void onAttributionEvent(in ACString sourceHost, in ACString type, in uint32_t index, in AString ad, in ACString targetHost);
   void onAttributionConversion(in ACString targetHost, in AString task, in uint32_t histogramSize, in uint32_t lookbackDays, in ACString impressionType, in Array<AString> ads, in Array<ACString> sourceHosts);
+  double getBudget(in ACString filterType, in unsigned long long epochId, in ACString uri);
 };

@@ -11,4 +11,7 @@ nsstring = { path = "../../xpcom/rust/nsstring" }
 xpcom = { path = "../../xpcom/rust/xpcom" }
 thin-vec = { version = "0.2.1", features = ["gecko-ffi"] }
 
+pdslib = { version = "0.2.0", path = "pdslib" }
+
 log = "0.4"
+anyhow = "1.0"

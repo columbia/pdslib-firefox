@@ -26,4 +26,5 @@ dictionary PrivateAttributionConversionOptions {
 interface PrivateAttribution {
   [Throws] undefined saveImpression(PrivateAttributionImpressionOptions options);
   [Throws] undefined measureConversion(PrivateAttributionConversionOptions options);
+  double getBudget(UTF8String filterType, long long epochId, UTF8String uri);
 };
