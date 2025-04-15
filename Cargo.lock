@@ -4913,6 +4913,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "pdslib"
+version = "0.2.0"
+dependencies = [
+ "anyhow",
+ "log",
+ "serde",
+ "thiserror 2.0.9",
+]
+
+[[package]]
 name = "pe-unwind-info"
 version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5125,10 +5135,12 @@ dependencies = [
 name = "privateattribution"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "libc",
  "log",
  "nserror",
  "nsstring",
+ "pdslib",
  "thin-vec",
  "xpcom",
 ]
