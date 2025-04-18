@@ -1,1 +1,4 @@
 ac_add_options MOZ_TELEMETRY_REPORTING=1
+ac_add_options --disable-optimize
+ac_add_options --disable-tests
+ac_add_options --with-ccache=sccache
