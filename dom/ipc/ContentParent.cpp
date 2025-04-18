@@ -1210,6 +1210,58 @@ IPCResult ContentParent::RecvAttributionConversion(
   return IPC_OK();
 }
 
+mozilla::ipc::IPCResult ContentParent::RecvGetBudget(
+  const nsACString& aFilterType, const uint64_t& aEpochId,
+  const nsACString& aUri, double* aBudget) {
+  nsCOMPtr<nsIPrivateAttributionService> pa =
+    components::PrivateAttribution::Service();
+  if (NS_WARN_IF(!pa)) {
+  *aBudget = -1.0;
+  return IPC_OK();
+  }
+
+  pa->GetBudget(aFilterType, aEpochId, aUri, aBudget);
+  return IPC_OK();
+}
+
+mozilla::ipc::IPCResult ContentParent::RecvClearEvents() {
+  nsCOMPtr<nsIPrivateAttributionService> pa =
+    components::PrivateAttribution::Service();
+  if (NS_WARN_IF(!pa)) {
+  return IPC_OK();
+  }
+
+  pa->ClearEvents();
+  return IPC_OK();
+}
+
+mozilla::ipc::IPCResult ContentParent::RecvAddMockEvent(
+  const uint64_t& aEpoch, const nsACString& aSourceUri,
+  const nsTArray<nsCString>& aTriggerUris,
+  const nsTArray<nsCString>& aQuerierUris) {
+  nsCOMPtr<nsIPrivateAttributionService> pa =
+    components::PrivateAttribution::Service();
+  if (NS_WARN_IF(!pa)) {
+  return IPC_OK();
+  }
+
+  pa->AddMockEvent(aEpoch, aSourceUri, aTriggerUris, aQuerierUris);
+  return IPC_OK();
+}
+
+mozilla::ipc::IPCResult ContentParent::RecvComputeReportFor(
+  const nsACString& aTriggerUri, const nsTArray<nsCString>& aSourceUris,
+  const nsTArray<nsCString>& aQuerierUris) {
+  nsCOMPtr<nsIPrivateAttributionService> pa =
+    components::PrivateAttribution::Service();
+  if (NS_WARN_IF(!pa)) {
+  return IPC_OK();
+  }
+
+  pa->ComputeReportFor(aTriggerUri, aSourceUris, aQuerierUris);
+  return IPC_OK();
+}
+
 /*static*/
 void ContentParent::LogAndAssertFailedPrincipalValidationInfo(
     nsIPrincipal* aPrincipal, const char* aMethod) {

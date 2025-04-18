@@ -53,8 +53,7 @@ struct MyPrivateAttributionService {
 #[allow(non_snake_case)]
 impl MyPrivateAttributionService {
     fn new() -> Result<RefPtr<Self>, ()> {
-        let capacities: StaticCapacities<FilterId<usize, String>, PureDPBudget> =
-            StaticCapacities::mock();
+        let capacities = Self::capacities();
         let filters: HashMapFilterStorage<_, PureDPBudgetFilter, _, _> =
             HashMapFilterStorage::new(capacities).unwrap();
         let events: HashMapEventStorage<_, PpaRelevantEventSelector> = HashMapEventStorage::new();
@@ -69,6 +68,15 @@ impl MyPrivateAttributionService {
 
         let this = Self::allocate(InitMyPrivateAttributionService { pdslib });
         Ok(this)
+    }
+
+    fn capacities() -> StaticCapacities<FilterId<usize, String>, PureDPBudget> {
+        StaticCapacities::new(
+            PureDPBudget::Epsilon(1.0),
+            PureDPBudget::Epsilon(8.0),
+            PureDPBudget::Epsilon(2.0),
+            PureDPBudget::Epsilon(4.0),
+        )
     }
 
     xpcom_method!(
@@ -89,7 +97,7 @@ impl MyPrivateAttributionService {
         ad: &nsAString,
         targetHost: &nsACString,
     ) -> Result<(), nsresult> {
-        log::trace!("onAttributionEvent(sourceHost={sourceHost}, ty={ty}, index={index}, ad={ad}, targetHost={targetHost})");
+        log::info!("onAttributionEvent(sourceHost={sourceHost}, ty={ty}, index={index}, ad={ad}, targetHost={targetHost})");
 
         /// todo: converting to String does a copy, we should use nsACString instead
         let source_uri = sourceHost.to_string();
@@ -113,7 +121,7 @@ impl MyPrivateAttributionService {
             filter_data: filter_data(ad, index),
         };
 
-        log::trace!("Registering event: {:?}", event);
+        log::info!("Registering event: {:?}", event);
 
         let mut pdslib = self.pdslib.lock().unwrap();
         pdslib.register_event(event).unwrap();
@@ -143,7 +151,7 @@ impl MyPrivateAttributionService {
         ads: &ThinVec<nsString>,
         sourceHosts: &ThinVec<nsCString>,
     ) -> Result<(), nsresult> {
-        log::trace!(
+        log::info!(
             "onAttributionConversion(targetHost={targetHost}, task={task}, histogramSize={histogramSize}, lookbackDays={lookbackDays}, impressionType={impressionType}, ads={ads:?}, sourceHosts={sourceHosts:?})",
         );
 
@@ -175,9 +183,9 @@ impl MyPrivateAttributionService {
         let request_config = PpaHistogramConfig {
             start_epoch,
             end_epoch,
-            // using values from ara_demo.rs
-            report_global_sensitivity: 32768.0,
-            query_global_sensitivity: 65536.0,
+            // using values from ppa_workflow.rs
+            report_global_sensitivity: 70.0,
+            query_global_sensitivity: 100.0,
             requested_epsilon: 1.0,
             histogram_size: histogramSize as usize,
         };
@@ -196,8 +204,8 @@ impl MyPrivateAttributionService {
         drop(pdslib);
 
         for (uri, report) in report {
-            log::debug!("Report for Uri {uri}:");
-            log::debug!("{:?}", report);
+            log::info!("Report for Uri {uri}:");
+            log::info!("{:?}", report);
         }
 
         Ok(())
@@ -217,7 +225,7 @@ impl MyPrivateAttributionService {
         epoch_id: u64,
         uri: &nsACString,
     ) -> Result<f64, nsresult> {
-        log::trace!("getBudget(filterType={filter_type}, epochId={epoch_id}, uri={uri})");
+        log::info!("getBudget(filterType={filter_type}, epochId={epoch_id}, uri={uri})");
 
         let filter_type = filter_type.to_string();
         let epoch_id = epoch_id as usize;
@@ -235,16 +243,139 @@ impl MyPrivateAttributionService {
         };
 
         let mut pdslib = self.pdslib.lock().unwrap();
+
+        if !pdslib.filter_storage.is_initialized(&filter_id).unwrap() {
+            log::info!("Initializing filter {filter_id:?}");
+            pdslib.filter_storage.new_filter(filter_id.clone()).unwrap();
+        }
+
         let budget = pdslib
             .filter_storage
             .remaining_budget(&filter_id)
             .map(|budget| match budget {
-                PureDPBudget::Infinite => f64::NAN,
+                PureDPBudget::Infinite => f64::INFINITY,
                 PureDPBudget::Epsilon(epsilon) => epsilon,
             })
-            .unwrap_or(0.0);
+            .unwrap();
 
+        log::info!("Budget for filter {filter_id:?}: {budget}");
         return Ok(budget);
+    }
+
+    xpcom_method!(
+        clear_events => ClearEvents()
+    );
+
+    fn clear_events(&self) -> Result<(), nsresult> {
+        log::info!("clearEvents()");
+
+        let mut pdslib = self.pdslib.lock().unwrap();
+        pdslib.event_storage = HashMapEventStorage::new();
+        pdslib.filter_storage = HashMapFilterStorage::new(Self::capacities()).unwrap();
+
+        log::info!("Successfully cleared events");
+        Ok(())
+    }
+
+    xpcom_method!(
+        add_mock_event => AddMockEvent(
+            epoch: u64,
+            sourceUri: *const nsACString,
+            triggerUris: *const ThinVec<nsCString>,
+            querierUris: *const ThinVec<nsCString>
+        )
+    );
+
+    fn add_mock_event(
+        &self,
+        epoch: u64,
+        source_uri: &nsACString,
+        trigger_uris: &ThinVec<nsCString>,
+        querier_uris: &ThinVec<nsCString>,
+    ) -> Result<(), nsresult> {
+        log::info!("addMockEvent(epoch={epoch}, sourceUri={source_uri}, triggerUris={trigger_uris:?}, querierUris={querier_uris:?})");
+
+        let epoch_to_timestamp = |epoch| {
+            let epoch_duration = epoch as u64 * epoch::EPOCH_DURATION.as_millis() as u64;
+            timestamp_now() - epoch_duration
+        };
+        let now = timestamp_now();
+
+        let event = PpaEvent {
+            id: 1,              // unused
+            histogram_index: 0, // unused
+            filter_data: 0,     // unused
+            epoch_number: epoch as usize,
+            timestamp: epoch_to_timestamp(epoch),
+            uris: EventUris {
+                source_uri: source_uri.to_string(),
+                trigger_uris: trigger_uris.iter().map(|uri| uri.to_string()).collect(),
+                intermediary_uris: vec![],
+                querier_uris: querier_uris.iter().map(|uri| uri.to_string()).collect(),
+            },
+        };
+
+        let mut pdslib = self.pdslib.lock().unwrap();
+        pdslib.register_event(event).unwrap();
+
+        log::info!("Successfully registered mock event at epoch {epoch}");
+        Ok(())
+    }
+
+    xpcom_method!(
+        compute_report_for => ComputeReportFor(
+            triggerUri: *const nsACString,
+            sourceUris: *const ThinVec<nsCString>,
+            querierUris: *const ThinVec<nsCString>
+        )
+    );
+
+    fn compute_report_for(
+        &self,
+        trigger_uri: &nsACString,
+        source_uris: &ThinVec<nsCString>,
+        querier_uris: &ThinVec<nsCString>,
+    ) -> Result<(), nsresult> {
+        log::info!("computeReportFor(triggerUri={trigger_uri})");
+
+        let uris = ReportRequestUris {
+            trigger_uri: trigger_uri.to_string(),
+            source_uris: source_uris.iter().map(|uri| uri.to_string()).collect(),
+            intermediary_uris: vec![],
+            querier_uris: querier_uris.iter().map(|uri| uri.to_string()).collect(),
+        };
+
+        let epoch_now = epoch_now();
+
+        let request_config = PpaHistogramConfig {
+            start_epoch: epoch_now,
+            end_epoch: epoch_now,
+            // using values from ppa_workflow.rs
+            report_global_sensitivity: 70.0,
+            query_global_sensitivity: 100.0,
+            requested_epsilon: 1.0,
+            histogram_size: 10,
+        };
+        let mut request = PpaHistogramRequest::new(
+            request_config,
+            PpaRelevantEventSelector {
+                report_request_uris: uris,
+                is_matching_event: Box::new(|_| true),
+                bucket_intermediary_mapping: HashMap::new(),
+            },
+        )
+        .unwrap();
+
+        let mut pdslib = self.pdslib.lock().unwrap();
+        let report = pdslib.compute_report(&mut request).unwrap();
+        drop(pdslib);
+
+        for (uri, report) in report {
+            log::info!("Report for Uri {uri}:");
+            log::info!("{:?}", report);
+        }
+
+        Ok(())
     }
 }
 
@@ -253,7 +384,7 @@ pub unsafe extern "C" fn nsPrivateAttributionConstructor(
     iid: &nsIID,
     result: *mut *mut c_void,
 ) -> nsresult {
-    log::trace!("nsPrivateAttributionConstructor");
+    log::info!("nsPrivateAttributionConstructor");
 
     let service = match MyPrivateAttributionService::new() {
         Ok(service) => service,

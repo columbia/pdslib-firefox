@@ -7,6 +7,7 @@
 #ifndef mozilla_dom_PrivateAttribution_h
 #define mozilla_dom_PrivateAttribution_h
 
+#include "nsTArray.h"
 #include "nsWrapperCache.h"
 #include "nsCOMPtr.h"
 
@@ -36,6 +37,13 @@ class PrivateAttribution final : public nsWrapperCache {
                          ErrorResult&);
   double GetBudget(const nsACString& filterType, int64_t epochId,
                    const nsACString& uri);
+  void ClearEvents();
+  void AddMockEvent(uint64_t aEpoch, const nsACString& aSourceUri,
+                    const nsTArray<nsCString>& aTriggerUris,
+                    const nsTArray<nsCString>& aQuerierUris);
+  void ComputeReportFor(const nsACString& triggerUri,
+                        const nsTArray<nsCString>& sourceUris,
+                        const nsTArray<nsCString>& querierUris);
 
  private:
   static bool ShouldRecord();

@@ -510,6 +510,17 @@ class ContentParent final : public PContentParent,
       const Maybe<uint32_t>& aLookbackDays,
       const Maybe<PrivateAttributionImpressionType>& aImpressionType,
       const nsTArray<nsString>& aAds, const nsTArray<nsCString>& aSourceHosts);
+mozilla::ipc::IPCResult RecvGetBudget(
+        const nsACString& aFilterType, const uint64_t& aEpochId,
+        const nsACString& aUri, double* aBudget);
+mozilla::ipc::IPCResult RecvClearEvents();
+mozilla::ipc::IPCResult RecvAddMockEvent(
+        const uint64_t& aEpoch, const nsACString& aSourceUri,
+        const nsTArray<nsCString>& aTriggerUris,
+        const nsTArray<nsCString>& aQuerierUris);
+mozilla::ipc::IPCResult RecvComputeReportFor(
+        const nsACString& aTriggerUri, const nsTArray<nsCString>& aSourceUris,
+        const nsTArray<nsCString>& aQuerierUris);
 
   PHeapSnapshotTempFileHelperParent* AllocPHeapSnapshotTempFileHelperParent();
 

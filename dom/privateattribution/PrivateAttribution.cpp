@@ -140,7 +140,7 @@ void PrivateAttribution::MeasureConversion(
 }
 
 double PrivateAttribution::GetBudget(const nsACString& filterType,
-                                    int64_t epochId, const nsACString& uri) {
+                                     int64_t epochId, const nsACString& uri) {
   if (XRE_IsParentProcess()) {
     nsCOMPtr<nsIPrivateAttributionService> pa =
         components::PrivateAttribution::Service();
@@ -153,8 +153,75 @@ double PrivateAttribution::GetBudget(const nsACString& filterType,
     return out;
   }
 
-  // TODO: Implement RPC
-  return -1.0;
+  auto* content = ContentChild::GetSingleton();
+  if (NS_WARN_IF(!content)) {
+    return -1.0;
+  }
+  
+  double budget = -1.0;
+  if (!content->SendGetBudget(filterType, epochId, uri, &budget)) {
+    return -1.0;
+  }
+  return budget;
+}
+
+void PrivateAttribution::ClearEvents() {
+  if (XRE_IsParentProcess()) {
+    nsCOMPtr<nsIPrivateAttributionService> pa =
+        components::PrivateAttribution::Service();
+    if (NS_WARN_IF(!pa)) {
+      return;
+    }
+
+    pa->ClearEvents();
+  }
+
+  auto* content = ContentChild::GetSingleton();
+  if (NS_WARN_IF(!content)) {
+    return;
+  }
+  content->SendClearEvents();
+}
+
+void PrivateAttribution::AddMockEvent(uint64_t aEpoch,
+                                      const nsACString& aSourceUri,
+                                      const nsTArray<nsCString>& aTriggerUris,
+                                      const nsTArray<nsCString>& aQuerierUris) {
+  if (XRE_IsParentProcess()) {
+    nsCOMPtr<nsIPrivateAttributionService> pa =
+        components::PrivateAttribution::Service();
+    if (NS_WARN_IF(!pa)) {
+      return;
+    }
+
+    pa->AddMockEvent(aEpoch, aSourceUri, aTriggerUris, aQuerierUris);
+  }
+
+  auto* content = ContentChild::GetSingleton();
+  if (NS_WARN_IF(!content)) {
+    return;
+  }
+  content->SendAddMockEvent(aEpoch, aSourceUri, aTriggerUris, aQuerierUris);
+}
+
+void PrivateAttribution::ComputeReportFor(
+    const nsACString& triggerUri, const nsTArray<nsCString>& sourceUris,
+    const nsTArray<nsCString>& querierUris) {
+  if (XRE_IsParentProcess()) {
+    nsCOMPtr<nsIPrivateAttributionService> pa =
+        components::PrivateAttribution::Service();
+    if (NS_WARN_IF(!pa)) {
+      return;
+    }
+
+    pa->ComputeReportFor(triggerUri, sourceUris, querierUris);
+  }
+
+  auto* content = ContentChild::GetSingleton();
+  if (NS_WARN_IF(!content)) {
+    return;
+  }
+  content->SendComputeReportFor(triggerUri, sourceUris, querierUris);
 }
 
 }  // namespace mozilla::dom

@@ -1954,6 +1954,17 @@ parent:
                               PrivateAttributionImpressionType? aImpressionType,
                               nsString[] aAds,
                               nsCString[] aImpressionSourceHosts);
+
+    // Attribution demo helper functions
+    sync GetBudget(nsCString aFilterType, uint64_t aEpochId, nsCString aUri)
+                returns (double aBudget);
+    async ClearEvents();
+
+    async AddMockEvent(uint64_t aEpoch, nsCString aSourceUri,
+                                                                nsCString[] aTriggerUris, nsCString[] aQuerierUris);
+
+    async ComputeReportFor(nsCString aTriggerUri, nsCString[] aSourceUris,
+                                                                        nsCString[] aQuerierUris);
 };
 
 }

@@ -26,5 +26,10 @@ dictionary PrivateAttributionConversionOptions {
 interface PrivateAttribution {
   [Throws] undefined saveImpression(PrivateAttributionImpressionOptions options);
   [Throws] undefined measureConversion(PrivateAttributionConversionOptions options);
+
+  // for demonstration purposes
   double getBudget(UTF8String filterType, long long epochId, UTF8String uri);
+  undefined clearEvents();
+  undefined addMockEvent(unsigned long long epoch, UTF8String sourceUri, sequence<UTF8String> triggerUris, sequence<UTF8String> querierUris);
+  undefined computeReportFor(UTF8String triggerUri, sequence<UTF8String> sourceUris, sequence<UTF8String> querierUris);
 };
