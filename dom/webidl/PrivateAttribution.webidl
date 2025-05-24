@@ -26,4 +26,22 @@ dictionary PrivateAttributionConversionOptions {
 interface PrivateAttribution {
   [Throws] undefined saveImpression(PrivateAttributionImpressionOptions options);
   [Throws] undefined measureConversion(PrivateAttributionConversionOptions options);
+
+  // For demonstration purposes
+  [Throws] undefined addMockEvent(
+    unsigned long long index,
+    unsigned long long timestamp,
+    UTF8String sourceHost,
+    UTF8String targetHost,
+    DOMString ad
+  );
+  [Throws] undefined computeReportFor(
+    UTF8String targetHost,
+    sequence<UTF8String> sourceHosts,
+    unsigned long long histogramSize,
+    unsigned long long lookbackDays,
+    DOMString ad
+  );
+  [Throws] double getBudget(UTF8String filterType, unsigned long long epochId, UTF8String uri);
+  [Throws] undefined clearBudgets();
 };

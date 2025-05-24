@@ -40,9 +40,8 @@ XPCOMUtils.defineLazyPreferenceGetter(
   "toolkit.shopping.ohttpConfigURL"
 );
 
-const MAX_CONVERSIONS = 2;
 const DAY_IN_MILLI = 1000 * 60 * 60 * 24;
-const CONVERSION_RESET_MILLI = 7 * DAY_IN_MILLI;
+const EPOCH_DURATION = 7 * DAY_IN_MILLI;
 const DAP_TIMEOUT_MILLI = 30000;
 
 /**
@@ -62,14 +61,8 @@ export class PrivateAttributionService {
 
     this.dbName = "PrivateAttribution";
     this.impressionStoreName = "impressions";
-    this.budgetStoreName = "budgets";
-    this.storeNames = [this.impressionStoreName, this.budgetStoreName];
+    this.storeNames = [this.impressionStoreName];
     this.dbVersion = 1;
-    this.models = {
-      default: "lastImpression",
-      view: "lastView",
-      click: "lastClick",
-    };
   }
 
   get dapTelemetrySender() {
@@ -90,18 +83,17 @@ export class PrivateAttributionService {
     try {
       const impressionStore = await this.getImpressionStore();
 
-      const impression = await this.getImpression(impressionStore, ad, {
+      const epoch = this.timestampToEpoch(now);
+      const impression = {
         index,
-        target: targetHost,
-        source: sourceHost,
-      });
+        sourceHost,
+        targetHost,
+        timestamp: now,
+        epoch,
+        ad,
+      };
 
-      const prop = this.getModelProp(type);
-      impression.index = index;
-      impression.lastImpression = now;
-      impression[prop] = now;
-
-      await this.updateImpression(impressionStore, ad, impression);
+      await this.addNewImpression(impressionStore, impression);
     } catch (e) {
       console.error(e);
     }
@@ -123,123 +115,127 @@ export class PrivateAttributionService {
     const now = this.now();
 
     try {
-      const budget = await this.getBudget(targetHost, now);
-      const impression = await this.findImpression(
-        ads,
-        targetHost,
-        sourceHosts,
-        impressionType,
-        lookbackDays,
-        histogramSize,
-        now
-      );
+      const impressionStore = await this.getImpressionStore();
 
-      let index = 0;
-      let value = 0;
-      if (budget.conversions < MAX_CONVERSIONS && impression) {
-        index = impression.index;
-        value = 1;
+      const nowEpoch = this.timestampToEpoch(now);
+      const lookbackDaysEpoch = this.daysAgoToEpoch(now, lookbackDays);
+      for (let epoch = lookbackDaysEpoch; epoch <= nowEpoch; epoch++) {
+        const impressions = await this.getImpressions(impressionStore, epoch);
+
+        const relevantImpressions = await this.filterRelevantImpressions(
+          impressions,
+          ads,
+          sourceHosts,
+          targetHost
+        );
+
+        // format impressions as pdslib events
+        const events = relevantImpressions.map(impression => ({
+          timestamp: impression.timestamp,
+          epochNumber: impression.epoch,
+          histogramIndex: impression.index,
+          sourceHost: impression.sourceHost,
+          triggerHosts: [impression.targetHost],
+          intermediaryHosts: [impression.targetHost],
+          querierHosts: [impression.targetHost],
+        }));
+
+        const request = {
+          startEpoch: lookbackDaysEpoch,
+          endEpoch: nowEpoch,
+          attributableValue: 100.0,
+          maxAttributableValue: 200.0,
+          requestedEpsilon: 1.0,
+          histogramSize,
+          triggerHost: targetHost,
+          sourceHosts,
+          intermediaryHosts: [],
+          querierHosts: [targetHost],
+        };
+
+        const report = this.pdslib.computeReport(request, events);
+        console.log("Pdslib report:", report);
       }
-
-      await this.updateBudget(budget, value, targetHost);
-      await this.sendDapReport(task, index, histogramSize, value);
     } catch (e) {
       console.error(e);
     }
   }
 
-  async findImpression(ads, target, sources, model, days, histogramSize, now) {
-    let impressions = [];
+  async addMockEvent(index, timestamp, sourceHost, targetHost, ad) {
+    let impression = {
+      index,
+      sourceHost,
+      targetHost,
+      timestamp,
+      epoch: this.timestampToEpoch(timestamp),
+      ad,
+    };
 
     const impressionStore = await this.getImpressionStore();
+    await this.addNewImpression(impressionStore, impression);
+  }
 
-    // Get matching ad impressions
-    if (ads && ads.length) {
-      for (var i = 0; i < ads.length; i++) {
-        impressions = impressions.concat(
-          (await impressionStore.get(ads[i])) ?? []
-        );
-      }
-    } else {
-      impressions = (await impressionStore.getAll()).flat(1);
-    }
-
-    // Set attribution model properties
-    const prop = this.getModelProp(model);
-
-    // Find the most relevant impression
-    const lookbackWindow = now - days * DAY_IN_MILLI;
-    return (
-      impressions
-        // Filter by target, sources, and lookback days
-        .filter(
-          impression =>
-            impression.target === target &&
-            (!sources || sources.includes(impression.source)) &&
-            impression[prop] >= lookbackWindow &&
-            impression.index < histogramSize
-        )
-        // Get the impression with the most recent interaction
-        .reduce(
-          (cur, impression) =>
-            !cur || impression[prop] > cur[prop] ? impression : cur,
-          null
-        )
+  async computeReportFor(
+    targetHost,
+    sourceHosts,
+    histogramSize,
+    lookbackDays,
+    ad
+  ) {
+    await this.onAttributionConversion(
+      targetHost,
+      "", // task id
+      histogramSize,
+      lookbackDays,
+      "", // impression type
+      [ad],
+      sourceHosts
     );
   }
 
-  async getImpression(impressionStore, ad, defaultImpression) {
-    const impressions = (await impressionStore.get(ad)) ?? [];
-    const impression = impressions.find(r =>
-      this.compareImpression(r, defaultImpression)
+  getBudget(...args) {
+    return this.pdslib.getBudget(...args);
+  }
+
+  async clearBudgets(...args) {
+    this.pdslib.clearBudgets(...args);
+
+    // also clear impressions
+    const impressionStore = await this.getImpressionStore();
+    await impressionStore.clear();
+  }
+
+  timestampToEpoch(timestamp) {
+    return Math.floor(timestamp / EPOCH_DURATION);
+  }
+
+  daysAgoToEpoch(now, daysAgo) {
+    const daysAgoInMillis = daysAgo * DAY_IN_MILLI;
+    const targetTime = now - daysAgoInMillis;
+    return this.timestampToEpoch(targetTime);
+  }
+
+  async addNewImpression(impressionStore, impression) {
+    const impressions = (await impressionStore.get(impression.epoch)) ?? [];
+    impressions.push(impression);
+    await impressionStore.put(impressions, impression.epoch);
+  }
+
+  async getImpressions(impressionStore, epoch) {
+    return (await impressionStore.get(epoch)) ?? [];
+  }
+
+  async filterRelevantImpressions(impressions, ads, sourceHosts, targetHost) {
+    return impressions.filter(
+      impression =>
+        ads.includes(impression.ad) &&
+        targetHost === impression.targetHost &&
+        (!sourceHosts || sourceHosts.includes(impression.sourceHost))
     );
-
-    return impression ?? defaultImpression;
-  }
-
-  async updateImpression(impressionStore, key, impression) {
-    let impressions = (await impressionStore.get(key)) ?? [];
-
-    const i = impressions.findIndex(r => this.compareImpression(r, impression));
-    if (i < 0) {
-      impressions.push(impression);
-    } else {
-      impressions[i] = impression;
-    }
-
-    await impressionStore.put(impressions, key);
-  }
-
-  compareImpression(cur, impression) {
-    return cur.source === impression.source && cur.target === impression.target;
-  }
-
-  async getBudget(target, now) {
-    const budgetStore = await this.getBudgetStore();
-    const budget = await budgetStore.get(target);
-
-    if (!budget || now > budget.nextReset) {
-      return {
-        conversions: 0,
-        nextReset: now + CONVERSION_RESET_MILLI,
-      };
-    }
-
-    return budget;
-  }
-
-  async updateBudget(budget, value, target) {
-    const budgetStore = await this.getBudgetStore();
-    budget.conversions += value;
-    await budgetStore.put(budget, target);
   }
 
   async getImpressionStore() {
     return await this.getStore(this.impressionStoreName);
-  }
-
-  async getBudgetStore() {
-    return await this.getStore(this.budgetStoreName);
   }
 
   async getStore(storeName) {
@@ -267,6 +263,16 @@ export class PrivateAttributionService {
         }
       });
     });
+  }
+
+  get pdslib() {
+    return this._pdslib || (this._pdslib = this.getPdslibService());
+  }
+
+  getPdslibService() {
+    return Cc["@mozilla.org/private-attribution-pdslib;1"].getService(
+      Ci.nsIPrivateAttributionPdslibService
+    );
   }
 
   async sendDapReport(id, index, size, value) {

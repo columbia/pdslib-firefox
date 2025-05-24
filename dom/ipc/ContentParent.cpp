@@ -1208,6 +1208,57 @@ IPCResult ContentParent::RecvAttributionConversion(
   return IPC_OK();
 }
 
+IPCResult ContentParent::RecvAddMockEvent(const uint64_t& aIndex,
+                                          const uint64_t& aTimestamp,
+                                          const nsACString& aSourceHost,
+                                          const nsACString& aTargetHost,
+                                          const nsAString& aAd) {
+  nsCOMPtr<nsIPrivateAttributionService> pa =
+      components::PrivateAttribution::Service();
+  if (NS_WARN_IF(!pa)) {
+    return IPC_OK();
+  }
+  pa->AddMockEvent(aIndex, aTimestamp, aSourceHost, aTargetHost, aAd);
+  return IPC_OK();
+}
+
+IPCResult ContentParent::RecvComputeReportFor(
+    const nsACString& aTargetHost, const nsTArray<nsCString>& aSourceHosts,
+    const uint64_t& aHistogramSize, const uint64_t& aLookbackDays,
+    const nsAString& aAd) {
+  nsCOMPtr<nsIPrivateAttributionService> pa =
+      components::PrivateAttribution::Service();
+  if (NS_WARN_IF(!pa)) {
+    return IPC_OK();
+  }
+  pa->ComputeReportFor(aTargetHost, aSourceHosts, aHistogramSize, aLookbackDays,
+                       aAd);
+  return IPC_OK();
+}
+
+IPCResult ContentParent::RecvGetBudget(const nsACString& aFilterType,
+                                       const uint64_t& aEpochId,
+                                       const nsACString& aUri,
+                                       double* aBudget) {
+  nsCOMPtr<nsIPrivateAttributionService> pa =
+      components::PrivateAttribution::Service();
+  if (NS_WARN_IF(!pa)) {
+    return IPC_OK();
+  }
+  pa->GetBudget(aFilterType, aEpochId, aUri, aBudget);
+  return IPC_OK();
+}
+
+IPCResult ContentParent::RecvClearBudgets() {
+  nsCOMPtr<nsIPrivateAttributionService> pa =
+      components::PrivateAttribution::Service();
+  if (NS_WARN_IF(!pa)) {
+    return IPC_OK();
+  }
+  pa->ClearBudgets();
+  return IPC_OK();
+}
+
 /*static*/
 void ContentParent::LogAndAssertFailedPrincipalValidationInfo(
     nsIPrincipal* aPrincipal, const char* aMethod) {

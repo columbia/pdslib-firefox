@@ -139,4 +139,121 @@ void PrivateAttribution::MeasureConversion(
       aOptions.mAds, aOptions.mSources);
 }
 
+void PrivateAttribution::AddMockEvent(uint64_t aIndex, uint64_t aTimestamp,
+                                      const nsACString& aSourceHost,
+                                      const nsACString& aTargetHost,
+                                      const nsAString& aAd, ErrorResult& aRv) {
+  if (!ShouldRecord()) {
+    return;
+  }
+
+  if (!ValidateHost(aSourceHost, aRv) || !ValidateHost(aTargetHost, aRv)) {
+    return;
+  }
+
+  if (XRE_IsParentProcess()) {
+    nsCOMPtr<nsIPrivateAttributionService> pa =
+        components::PrivateAttribution::Service();
+    if (NS_WARN_IF(!pa)) {
+      return;
+    }
+    pa->AddMockEvent(aIndex, aTimestamp, aSourceHost, aTargetHost, aAd);
+    return;
+  }
+
+  auto* content = ContentChild::GetSingleton();
+  if (NS_WARN_IF(!content)) {
+    return;
+  }
+  content->SendAddMockEvent(aIndex, aTimestamp, aSourceHost, aTargetHost, aAd);
+}
+
+void PrivateAttribution::ComputeReportFor(
+    const nsACString& aTargetHost, const nsTArray<nsCString>& aSourceHosts,
+    uint64_t aHistogramSize, uint64_t aLookbackDays, const nsAString& aAd,
+    ErrorResult& aRv) {
+  if (!ShouldRecord()) {
+    return;
+  }
+
+  if (!ValidateHost(aTargetHost, aRv)) {
+    return;
+  }
+  for (const auto& host : aSourceHosts) {
+    if (!ValidateHost(host, aRv)) {
+      return;
+    }
+  }
+
+  if (XRE_IsParentProcess()) {
+    nsCOMPtr<nsIPrivateAttributionService> pa =
+        components::PrivateAttribution::Service();
+    if (NS_WARN_IF(!pa)) {
+      return;
+    }
+    pa->ComputeReportFor(aTargetHost, aSourceHosts, aHistogramSize,
+                         aLookbackDays, aAd);
+    return;
+  }
+
+  auto* content = ContentChild::GetSingleton();
+  if (NS_WARN_IF(!content)) {
+    return;
+  }
+  content->SendComputeReportFor(aTargetHost, aSourceHosts, aHistogramSize,
+                                aLookbackDays, aAd);
+}
+
+double PrivateAttribution::GetBudget(const nsACString& aFilterType,
+                                     uint64_t aEpochId, const nsACString& aUri,
+                                     ErrorResult& aRv) {
+  if (!ShouldRecord()) {
+    return 0.0;
+  }
+
+  if (!ValidateHost(aUri, aRv)) {
+    return 0.0;
+  }
+
+  double budget = 0.0;
+  if (XRE_IsParentProcess()) {
+    nsCOMPtr<nsIPrivateAttributionService> pa =
+        components::PrivateAttribution::Service();
+    if (NS_WARN_IF(!pa)) {
+      return 0.0;
+    }
+    pa->GetBudget(aFilterType, aEpochId, aUri, &budget);
+    return budget;
+  }
+
+  auto* content = ContentChild::GetSingleton();
+  if (NS_WARN_IF(!content)) {
+    return 0.0;
+  }
+  content->SendGetBudget(aFilterType, aEpochId, aUri, &budget);
+  return budget;
+}
+
+void PrivateAttribution::ClearBudgets(ErrorResult& aRv) {
+  if (!ShouldRecord()) {
+    return;
+  }
+
+  if (XRE_IsParentProcess()) {
+    nsCOMPtr<nsIPrivateAttributionService> pa =
+        components::PrivateAttribution::Service();
+    if (NS_WARN_IF(!pa)) {
+      return;
+    }
+    pa->ClearBudgets();
+    return;
+  }
+
+  auto* content = ContentChild::GetSingleton();
+  if (NS_WARN_IF(!content)) {
+    return;
+  }
+  content->SendClearBudgets();
+}
+
 }  // namespace mozilla::dom

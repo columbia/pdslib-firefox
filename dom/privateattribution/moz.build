@@ -17,6 +17,7 @@ UNIFIED_SOURCES += [
 ]
 
 XPIDL_SOURCES += [
+    "nsIPrivateAttributionPdslibService.idl",
     "nsIPrivateAttributionService.idl",
 ]
 
@@ -37,5 +38,7 @@ EXTRA_JS_MODULES += [
 ]
 
 include("/ipc/chromium/chromium-config.mozbuild")
+
+XPIDL_MODULE = "privateattribution"
 
 FINAL_LIBRARY = "xul"

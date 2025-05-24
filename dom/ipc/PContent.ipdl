@@ -1974,6 +1974,17 @@ parent:
                               PrivateAttributionImpressionType? aImpressionType,
                               nsString[] aAds,
                               nsCString[] aImpressionSourceHosts);
+  async AddMockEvent(uint64_t aIndex, uint64_t aTimestamp, nsCString aSourceHost,
+                     nsCString aTargetHost, nsString aAd);
+
+  async ComputeReportFor(nsCString aTargetHost, nsCString[] aSourceHosts,
+                         uint64_t aHistogramSize, uint64_t aLookbackDays,
+                         nsString aAd);
+
+  sync GetBudget(nsCString aFilterType, uint64_t aEpochId, nsCString aUri)
+      returns (double aBudget);
+
+  async ClearBudgets();
 };
 
 }

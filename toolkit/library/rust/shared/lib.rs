@@ -136,6 +136,8 @@ extern crate mime_guess_ffi;
 #[cfg(feature = "libz-rs-sys")]
 extern crate libz_rs_sys;
 
+extern crate privateattribution;
+
 extern crate log;
 use log::info;
 

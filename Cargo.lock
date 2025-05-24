@@ -2513,6 +2513,7 @@ dependencies = [
  "oxilangtag",
  "oxilangtag-ffi",
  "prefs_parser",
+ "privateattribution",
  "processtools",
  "profiler_helper",
  "qcms",
@@ -4957,6 +4958,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "pdslib"
+version = "0.2.0"
+dependencies = [
+ "anyhow",
+ "log",
+ "serde",
+ "thiserror 2.0.9",
+]
+
+[[package]]
 name = "pe-unwind-info"
 version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5162,6 +5173,21 @@ dependencies = [
  "sha3",
  "subtle",
  "thiserror 1.999.999",
+]
+
+[[package]]
+name = "privateattribution"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "libc",
+ "log",
+ "nserror",
+ "nsstring",
+ "pdslib",
+ "storage",
+ "thin-vec",
+ "xpcom",
 ]
 
 [[package]]

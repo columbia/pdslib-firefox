@@ -1,0 +1,43 @@
+/* -*- Mode: C; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 4 -*-
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "nsISupports.idl"
+
+[scriptable, uuid(d0534f97-b094-4453-9e1f-759b44bd8fdb)]
+interface PpaHistogramRequest : nsISupports {
+    readonly attribute unsigned long long startEpoch;
+    readonly attribute unsigned long long endEpoch;
+    readonly attribute double attributableValue;
+    readonly attribute double maxAttributableValue;
+    readonly attribute double requestedEpsilon;
+    readonly attribute unsigned long long histogramSize;
+    readonly attribute ACString triggerHost;
+    readonly attribute Array<ACString> sourceHosts;
+    readonly attribute Array<ACString> intermediaryHosts;
+    readonly attribute Array<ACString> querierHosts;
+};
+
+[scriptable, uuid(fdc34c83-d9de-4833-8b65-4ba61c3d7f70)]
+interface PpaEvent : nsISupports {
+    readonly attribute unsigned long long timestamp;
+    readonly attribute unsigned long long epochNumber;
+    readonly attribute unsigned long long histogramIndex;
+    readonly attribute ACString sourceHost;
+    readonly attribute Array<ACString> triggerHosts;
+    readonly attribute Array<ACString> intermediaryHosts;
+    readonly attribute Array<ACString> querierHosts;
+};
+
+[scriptable, uuid(05ebbc53-83f8-4d6a-b5a5-91da163a5a5d)]
+interface nsIPrivateAttributionPdslibService : nsISupports
+{
+  Array<double> computeReport(in PpaHistogramRequest request,
+                     in Array<PpaEvent> events);
+
+  // demo helper functions
+  double getBudget(in ACString filterType, in unsigned long long epochId, in ACString uri);
+  void clearBudgets();
+};

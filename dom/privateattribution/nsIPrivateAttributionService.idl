@@ -9,6 +9,40 @@
 [scriptable, uuid(c7e7fc54-4133-4191-bd40-cc2b77fd21bc)]
 interface nsIPrivateAttributionService : nsISupports
 {
-  void onAttributionEvent(in ACString sourceHost, in ACString type, in uint32_t index, in AString ad, in ACString targetHost);
-  void onAttributionConversion(in ACString targetHost, in AString task, in uint32_t histogramSize, in uint32_t lookbackDays, in ACString impressionType, in Array<AString> ads, in Array<ACString> sourceHosts);
+  void onAttributionEvent(
+    in ACString sourceHost,
+    in ACString type,
+    in uint32_t index,
+    in AString ad,
+    in ACString targetHost
+  );
+  void onAttributionConversion(
+    in ACString targetHost,
+    in AString task,
+    in uint32_t histogramSize,
+    in uint32_t lookbackDays,
+    in ACString impressionType,
+    in Array<AString> ads,
+    in Array<ACString> sourceHosts
+  );
+
+  // demo helper functions
+  void addMockEvent(
+    in unsigned long long index,
+    in unsigned long long timestamp,
+    in ACString sourceHost,
+    in ACString targetHost,
+    in AString ad
+  );
+  void computeReportFor(
+    in ACString targetHost,
+    in Array<ACString> sourceHosts,
+    in unsigned long long histogramSize,
+    in unsigned long long lookbackDays,
+    in AString ad
+  );
+
+  // forwarded to pdslib
+  double getBudget(in ACString filterType, in unsigned long long epochId, in ACString uri);
+  void clearBudgets();
 };

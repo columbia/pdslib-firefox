@@ -7,6 +7,7 @@
 #ifndef mozilla_dom_PrivateAttribution_h
 #define mozilla_dom_PrivateAttribution_h
 
+#include "nsTArray.h"
 #include "nsWrapperCache.h"
 #include "nsCOMPtr.h"
 
@@ -34,6 +35,18 @@ class PrivateAttribution final : public nsWrapperCache {
   void SaveImpression(const PrivateAttributionImpressionOptions&, ErrorResult&);
   void MeasureConversion(const PrivateAttributionConversionOptions&,
                          ErrorResult&);
+  void AddMockEvent(uint64_t aIndex, uint64_t aTimestamp,
+                    const nsACString& aSourceHost,
+                    const nsACString& aTargetHost, const nsAString& aAd,
+                    ErrorResult& aRv);
+  void ComputeReportFor(const nsACString& aTargetHost,
+                        const nsTArray<nsCString>& aSourceHosts,
+                        uint64_t aHistogramSize, uint64_t aLookbackDays,
+                        const nsAString& aAd, ErrorResult& aRv);
+  [[nodiscard]] double GetBudget(const nsACString& aFilterType,
+                                 uint64_t aEpochId, const nsACString& aUri,
+                                 ErrorResult& aRv);
+  void ClearBudgets(ErrorResult& aRv);
 
  private:
   static bool ShouldRecord();
@@ -46,5 +59,10 @@ class PrivateAttribution final : public nsWrapperCache {
 };
 
 }  // namespace mozilla::dom
+
+// Implemented in Rust.
+extern "C" {
+nsresult nsPrivateAttributionPdslibConstructor(REFNSIID aIID, void** aResult);
+}  // extern "C"
 
 #endif  // mozilla_dom_PrivateAttribution_h

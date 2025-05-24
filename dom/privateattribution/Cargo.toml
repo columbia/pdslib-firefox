@@ -1,0 +1,18 @@
+[package]
+name = "privateattribution"
+version = "0.1.0"
+edition = "2021"
+rust-version.workspace = true
+
+[dependencies]
+libc = "0.2"
+nserror = { path = "../../xpcom/rust/nserror" }
+nsstring = { path = "../../xpcom/rust/nsstring" }
+xpcom = { path = "../../xpcom/rust/xpcom" }
+thin-vec = { version = "0.2.1", features = ["gecko-ffi"] }
+storage = { path = "../../storage/rust" }
+
+pdslib = { version = "0.2.0", path = "pdslib" }
+
+log = "0.4"
+anyhow = "1.0"
