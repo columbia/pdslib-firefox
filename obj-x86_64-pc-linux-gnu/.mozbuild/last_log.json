@@ -1,0 +1,6 @@
+[1748068387.507943, "artifact", {"name": "node.tar.zst"}]
+[1748068387.5089743, "artifact", {"path": "/home/giorgio/.mozbuild/toolchains/d9a87b901daeea7f-node.tar.zst"}]
+[1748068387.7247248, "artifact", {"bytes_so_far": 0, "total_size": 44026563, "percent": 0.0}]
+[1748068387.8874772, "artifact", {"bytes_so_far": 16777216, "total_size": 44026563, "percent": 38.10703097582248}]
+[1748068387.9714332, "artifact", {"bytes_so_far": 33554432, "total_size": 44026563, "percent": 76.21406195164496}]
+[1748068388.1161377, "artifact", {"bytes_so_far": 44026563, "total_size": 44026563, "percent": 100.0}]

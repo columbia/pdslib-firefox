@@ -1,0 +1,80 @@
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+---
+loader: taskgraph.loader.transform:loader
+
+transforms:
+    - gecko_taskgraph.transforms.release_deps:transforms
+    - gecko_taskgraph.transforms.resolve_landoscript_keyed_by:transforms
+    - gecko_taskgraph.transforms.task:transforms
+
+task-defaults:
+    description: Release Promotion version tag for buildN
+    run-on-projects: []
+    shipping-phase: promote
+    worker-type: lando
+    scopes:
+        by-project:
+            mozilla-beta:
+                - project:releng:lando:repo:firefox-beta
+                - project:releng:lando:action:tag
+            mozilla-release:
+                - project:releng:lando:repo:firefox-release
+                - project:releng:lando:action:tag
+            mozilla-esr115:
+                - project:releng:lando:repo:firefox-esr115
+                - project:releng:lando:action:tag
+            mozilla-esr128:
+                - project:releng:lando:repo:firefox-esr128
+                - project:releng:lando:action:tag
+            try:
+                - project:releng:lando:repo:ff-test-dev
+                - project:releng:lando:action:tag
+            default: []
+    worker:
+        implementation: landoscript
+        tags: ['buildN']
+        lando-repo:
+            by-project:
+                mozilla-beta: firefox-beta
+                mozilla-release: firefox-release
+                mozilla-esr115: firefox-esr115
+                mozilla-esr128: firefox-esr128
+                try: ff-test-dev
+                default: ""
+        # used to map hg revisions to the git revisions that landoscript needs
+        hg-repo-url:
+            by-project:
+                mozilla-beta: https://hg.mozilla.org/releases/mozilla-beta
+                mozilla-release: https://hg.mozilla.org/releases/mozilla-release
+                mozilla-esr115: https://hg.mozilla.org/releases/mozilla-esr115
+                mozilla-esr128: https://hg.mozilla.org/releases/mozilla-esr128
+                try: https://hg.mozilla.org/try
+                default: ""
+
+tasks:
+    firefox:
+        name: firefox-tag-buildN
+        shipping-product: firefox
+        treeherder:
+            platform: firefox-release/opt
+            symbol: Rel(TagBuild)
+            tier: 1
+            kind: build
+
+    devedition:
+        name: devedition-tag-buildN
+        shipping-product: devedition
+        treeherder:
+            platform: devedition-release/opt
+            symbol: Rel(TagBuild)
+            tier: 1
+            kind: build
+
+    firefox-android:
+        name: firefox-android-tag-buildN
+        shipping-product: firefox-android
+        treeherder:
+            platform: fenix-android-all/opt
+            symbol: Rel(TagBuild)
+            tier: 1
+            kind: build
