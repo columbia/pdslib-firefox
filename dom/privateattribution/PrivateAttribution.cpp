@@ -208,19 +208,19 @@ double PrivateAttribution::GetBudget(const nsACString& aFilterType,
                                      uint64_t aEpochId, const nsACString& aUri,
                                      ErrorResult& aRv) {
   if (!ShouldRecord()) {
-    return 0.0;
+    return -1.0;
   }
 
   if (!ValidateHost(aUri, aRv)) {
-    return 0.0;
+    return -2.0;
   }
 
-  double budget = 0.0;
+  double budget = -3.0;
   if (XRE_IsParentProcess()) {
     nsCOMPtr<nsIPrivateAttributionService> pa =
         components::PrivateAttribution::Service();
     if (NS_WARN_IF(!pa)) {
-      return 0.0;
+      return -4.0;
     }
     pa->GetBudget(aFilterType, aEpochId, aUri, &budget);
     return budget;
@@ -228,7 +228,7 @@ double PrivateAttribution::GetBudget(const nsACString& aFilterType,
 
   auto* content = ContentChild::GetSingleton();
   if (NS_WARN_IF(!content)) {
-    return 0.0;
+    return -5.0;
   }
   content->SendGetBudget(aFilterType, aEpochId, aUri, &budget);
   return budget;
